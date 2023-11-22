@@ -35,7 +35,7 @@ namespace LLAMA2Sharp
         /// </summary>
         public int HeadSize => Dims / N_heads;
         /// <summary>
-        /// Dims / N_heads / 2
+        /// N_heads / 2
         /// </summary>
         public int HeadSizeHalf => HeadSize / 2;
     }

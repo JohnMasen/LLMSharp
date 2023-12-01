@@ -220,7 +220,7 @@ namespace LLAMA2Sharp
             }
         }
 
-        public static int ArgMax(Span<float> probabilities)
+        public static int ArgMax(Span<float> probabilities) 
         {
             int maxIndex = 0;
             float maxValue = probabilities[0];

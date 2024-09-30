@@ -10,8 +10,8 @@ namespace LLAMA2Sharp.UnitTest
     [TestClass]
     public class TransformTest
     {
-        private string weightFilePath = @"C:\GithubRoot\llama2.cs\stories15M.bin";
-        private string vocabFilePath = @"C:\GithubRoot\llama2.cs\tokenizer.bin";
+        private string weightFilePath = @"d:\GithubRoot\llama2.cs\stories15M.bin";
+        private string vocabFilePath = @"d:\GithubRoot\llama2.cs\tokenizer.bin";
         string TransformONEResult = "Once upon a time, there was a little girl named Lily. She loved to play outside in the sunshine. One day, she saw a big, red ball in the sky. It was the sun! She wanted to touch it, but it was too high up. <0x0A>Lily asked her mommy, \"Can you help me touch the sun?\" <0x0A>Her mommy said, \"Sure, let's go outside and try to touch it together.\" <0x0A>They went outside and Lily's mommy held her hand and they touched the sun. It was so hot that they felt the heat on their skin. <0x0A>Lily said, \"It's so hot!\" <0x0A>Her mommy said, \"Yes, it is. But we can still touch it.\" <0x0A>Lily was happy that they could touch the sun and she could still play outside.";
         [TestMethod]
         public void CanRunTransform()

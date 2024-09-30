@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="ILGPU.Algorithms" Version="1.5.0" />
+    <PackageReference Include="System.Numerics.Tensors" Version="9.0.0-rc.1.24431.7" />
   </ItemGroup>
 
 </Project>

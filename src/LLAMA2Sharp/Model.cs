@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Numerics;
+using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -135,14 +136,16 @@ namespace LLAMA2Sharp
                         float score = 0.0f;
                         ReadOnlySpan<float> qSpan = context.q.Span.Slice(qOffset, headSize);
                         ReadOnlySpan<float> keySpan = context.key_cache.Span.Slice(keyCacheOffset, headSize);
-                        MathHelper.WithSpan(qSpan, keySpan, (q, k) =>
-                        {
-                            score += Vector.Dot(q, k);
-                        },
-                        (q, k) =>
-                        {
-                            score += q * k;
-                        });
+                        score += TensorPrimitives.Dot(qSpan, keySpan);
+                        
+                        //MathHelper.WithSpan(qSpan, keySpan, (q, k) =>
+                        //{
+                        //    score += Vector.Dot(q, k);
+                        //},
+                        //(q, k) =>
+                        //{
+                        //    score += q * k;
+                        //});
                         score /= MathF.Sqrt(headSize);
 
                         // save the score to the attention buffer
@@ -163,13 +166,14 @@ namespace LLAMA2Sharp
                         float a = context.att.Span[t + attOffset];
                         var xb = context.xb.Span.Slice(xbOffset, headSize);
                         var vcache=context.value_cache.Span.Slice(vOffset, headSize);
-                        MathHelper.WithSpanWB(xb, vcache, (x, v) =>
-                        {
-                            return x+v * a;
-                        }, (x, v) =>
-                        {
-                            return x+v * a;
-                        });
+                        //MathHelper.WithSpanWB(xb, vcache, (x, v) =>
+                        //{
+                        //    return x+v * a;
+                        //}, (x, v) =>
+                        //{
+                        //    return x+v * a;
+                        //});
+                        TensorPrimitives.MultiplyAdd(vcache,a,xb,xb);
                         
                     }
 

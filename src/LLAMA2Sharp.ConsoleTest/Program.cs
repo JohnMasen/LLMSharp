@@ -9,8 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-string weightFilePath = @"C:\GithubRoot\llama2.cs\stories15M.bin";
-string vocabFilePath = @"C:\GithubRoot\llama2.cs\tokenizer.bin";
+string weightFilePath = @"d:\GithubRoot\llama2.cs\stories15M.bin";
+string vocabFilePath = @"d:\GithubRoot\llama2.cs\tokenizer.bin";
 string prompt = "Once upon a time";
 Console.WriteLine("Hello, World!");
 orgcode org = new orgcode();

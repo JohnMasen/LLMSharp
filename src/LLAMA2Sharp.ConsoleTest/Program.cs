@@ -36,6 +36,8 @@ Console.WriteLine(dataCheck("freq_cis_real", model.Weights.freq_cis_real, r.weig
 Console.WriteLine(dataCheck("freq_cis_imag", model.Weights.freq_cis_imag, r.weights.freq_cis_imag));
 Console.WriteLine(dataCheck("wcls", model.Weights.wcls, r.weights.wcls));
 
+dumpHeader(model.Header);
+
 
 var vocabs=org.ReadVocab(vocabFilePath, r.config.vocab_size);
 var t = new Tokenlizer(vocabFilePath, model.Header.Vocab_Size);
@@ -136,4 +138,19 @@ bool lowpercisionSequenceCheck(IEnumerable<float>data1,IEnumerable<float> data2,
         }
     }
     return data1_s.SequenceEqual(data2_s);
+}
+
+void dumpHeader(ModelHeaderInfo header)
+{
+    Console.WriteLine("-------------Header info Start-------------");
+    foreach (var f in header.GetType().GetFields())
+    {
+        Console.WriteLine($"[F]{f.Name}= {f.GetValue(header)}");
+    }
+    foreach (var p in header.GetType().GetProperties())
+    {
+        Console.WriteLine($"[P]{p.Name}= {p.GetValue(header)}");
+    }
+    
+    Console.WriteLine("-------------Header info End-------------");
 }

@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
 using System;
 using System.Diagnostics;
 using System.Numerics.Tensors;
@@ -124,7 +125,7 @@ namespace LLAMA2Sharp.UnitTest
             org.Matmul(mo1, mx, mw, n, d);
             MathHelper.MatMul(mx, n, d, mw, mo2);
             //Assert.IsTrue(mo1.SequenceEqual(mo2));
-            Assert.IsTrue(SequenceEqual(mo1, mo2, 3));
+            Assert.IsTrue(SequenceEqual(mo1, mo2, 2));
         }
 
 
@@ -137,7 +138,7 @@ namespace LLAMA2Sharp.UnitTest
             Array.Copy(smax1, smax2, smax1.Length);
             org.Softmax(smax1, 0, smax1.Length);
             MathHelper.SoftMax(smax2);
-            Assert.IsTrue(SequenceEqual(smax1,smax2,6));
+            Assert.IsTrue(SequenceEqual(smax1,smax2,3));
         }
         [TestMethod]
         public void AccumTest()

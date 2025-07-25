@@ -99,7 +99,7 @@ namespace LLAMA2Sharp.UnitTest
             Memory<float> o2 = new Memory<float>(new float[model.Weights.rms_att_weight.Length]);
             model.Weights.rms_att_weight.Span.CopyTo(o2.Span);
 
-            float[] o = randomF(r.config.hidden_dim);
+            float[] o = randomF(r.config.dim);
             float[] x = randomF(r.config.dim);
             float[] w1 = randomF(r.config.dim);
             float[] w2 = new float[model.Header.Dims];

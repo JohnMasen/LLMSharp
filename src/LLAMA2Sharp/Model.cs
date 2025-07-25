@@ -93,22 +93,27 @@ namespace LLAMA2Sharp
                 //MathHelper.DumpSpan(context.q.Span);
                 MathHelper.MatMul(context.xb.Span, dims, dims, Weights.wk.Span.Slice(i * dims * dims, dims * dims), context.k.Span);
                 MathHelper.MatMul(context.xb.Span, dims, dims, Weights.wv.Span.Slice(i * dims * dims, dims * dims), context.v.Span);
-                
+
                 // RoPE relative positional encoding: complex-valued rotate q and k by freq_cis in each head
                 //TODO: reimplement with vector?
-                for (int j = 0; j < dims; j += 2)
-                {
-                    float q0 = context.q.Span[j];
-                    float q1 = context.q.Span[j + 1];
-                    float k0 = context.k.Span[j];
-                    float k1 = context.k.Span[j + 1];
-                    float fcr = Weights.freq_cis_real.Span[pos * halfHeadSize + j % headSize/2];
-                    float fci = Weights.freq_cis_imag.Span[pos * halfHeadSize + j % headSize/2];
-                    context.q.Span[j] = q0 * fcr - q1 * fci;
-                    context.q.Span[j + 1] = q0 * fci + q1 * fcr;
-                    context.k.Span[j] = k0 * fcr - k1 * fci;
-                    context.k.Span[j + 1] = k0 * fci + k1 * fcr;
-                }
+                //for (int j = 0; j < dims; j += 2)
+                //{
+                //    float q0 = context.q.Span[j];
+                //    float q1 = context.q.Span[j + 1];
+                //    float k0 = context.k.Span[j];
+                //    float k1 = context.k.Span[j + 1];
+                //    float fcr = Weights.freq_cis_real.Span[pos * halfHeadSize + j % headSize / 2];
+                //    float fci = Weights.freq_cis_imag.Span[pos * halfHeadSize + j % headSize / 2];
+                //    context.q.Span[j] = q0 * fcr - q1 * fci;
+                //    context.q.Span[j + 1] = q0 * fci + q1 * fcr;
+                //    context.k.Span[j] = k0 * fcr - k1 * fci;
+                //    context.k.Span[j + 1] = k0 * fci + k1 * fcr;
+                //}
+                var fr = Weights.freq_cis_real.Span.Slice(pos * halfHeadSize, headSize / 2);
+                var fi = Weights.freq_cis_imag.Span.Slice(pos * halfHeadSize, headSize / 2);
+                MathHelper.RoPE(context.q.Span, fr, fi);
+                MathHelper.RoPE(context.k.Span, fr, fi);
+
                 // save key,value at this time step (pos) to our kv cache
                 int ioff = i * Header.Seq_length * dims;
                 context.k.Span.CopyTo(context.key_cache.Span.Slice(ioff + pos * dims , dims));

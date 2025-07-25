@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualBasic.FileIO;
+﻿using ILGPU.Algorithms.Optimization.Optimizers;
+using ILGPU;
+using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -13,31 +15,17 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 using System.Threading.Tasks;
-
+using static System.Numerics.Tensors.TensorPrimitives;
 namespace LLAMA2Sharp
 {
     public static class MathHelper
     {
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply(this Span<float> source, Span<float> target)
         {
-            if (source.Length!=target.Length)
-            {
-                throw new ArgumentException("[DOT]Span length is not same");
-            }
-            int count = source.Length / Vector<float>.Count;
-            int remaining = source.Length % Vector<float>.Count;
-            Span<Vector<float>> v1s = MemoryMarshal.Cast<float, Vector<float>>(source);
-            ReadOnlySpan<Vector<float>> v2s = MemoryMarshal.Cast<float, Vector<float>>(target);
-            for (int i = 0; i < count; i++)
-            {
-                v1s[i] *= v2s[i];
-            }
-            for (int i = 1; i <= remaining; i++)
-            {
-                source[^i] *= target[^i];
-            }
+            TensorPrimitives.Multiply(source, target, source);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RMSNorm(Span<float> o, ReadOnlySpan<float> x, ReadOnlySpan<float> weight, int size)
         {
             // calculate sum of squares
@@ -45,13 +33,13 @@ namespace LLAMA2Sharp
             ss /= size;
             ss += 1e-5f;
             ss = 1.0f / MathF.Sqrt(ss);
-
+            
             Multiply3(weight, x, ss, o);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float SelfDot(this ReadOnlySpan<float> value)
         {
-            return TensorPrimitives.Dot(value, value);
+            return Dot(value, value);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply3(ReadOnlySpan<float> v1, ReadOnlySpan<float> v2, float v3, Span<float> target)
@@ -66,7 +54,7 @@ namespace LLAMA2Sharp
             using var m = MemoryPool<float>.Shared.Rent(value.Length);
             var mem = m.Memory.Slice(0, value.Length);
 
-            TensorPrimitives.Sigmoid(value, mem.Span);
+            Sigmoid(value, mem.Span);
             TensorPrimitives.Multiply(value, mem.Span, value);//value*=1/(1+exp(-value))
         }
 
@@ -77,7 +65,7 @@ namespace LLAMA2Sharp
             {
                 throw new ArgumentException("span1 should have same length to span2");
             }
-            TensorPrimitives.Add(value1, value2, value1);
+            Add(value1, value2, value1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -99,7 +87,7 @@ namespace LLAMA2Sharp
             for (int i = 0; i < d; i++)
             {
                 var weightBlock = weight.Slice(i * n, n);
-                output[i] = TensorPrimitives.Dot(input, weightBlock);
+                output[i] = Dot(input, weightBlock);
             }
         }
 
@@ -123,11 +111,58 @@ namespace LLAMA2Sharp
             float max = data[0];
             float sum = 0;
 
-            max = TensorPrimitives.Max(data);
-            TensorPrimitives.Subtract(data, max, data);//data=data-max,special case for LLAMA2 softmax
+            max = Max(data);
+            Subtract(data, max, data);//data=data-max,special case for LLAMA2 softmax
             TensorPrimitives.SoftMax(data, data);
 
         }
+
+        /// <summary>
+        /// RoPE calculation
+        /// </summary>
+        /// <param name="value">source value, length must equal to dims</param>
+        /// <param name="dims">dims</param>
+        /// <param name="fr">real part for current position, length must equal to headsize/2</param>
+        /// <param name="fi">image part for current position, length must equal to headsize/2</param>
+        public static void RoPE(scoped in Span<float> value, scoped in ReadOnlySpan<float> fr,scoped in ReadOnlySpan<float> fi)
+        {
+            //new code
+            var tData = new TensorSpan<float>(value, [value.Length],ReadOnlySpan<nint>.Empty);
+            var tFr = new ReadOnlyTensorSpan<float>(fr, [fr.Length], ReadOnlySpan<nint>.Empty);
+            var tFi = new ReadOnlyTensorSpan<float>(fi, [fi.Length], ReadOnlySpan<nint>.Empty);
+            //Tensor.Create<float>([1f, 2f], [2]);
+            var tfr1=Tensor.CreateUninitialized<float>([fr.Length]);
+            tFr.CopyTo(tfr1.AsTensorSpan());
+            var tfi1 = Tensor.CreateUninitialized<float>([fi.Length]);
+            tFi.CopyTo(tfi1.AsTensorSpan());
+
+
+            var tF = MathHelper.StackAlongDimension<float>(1, tfr1, tfi1);
+
+
+            var data=MemoryMarshal.Cast<float, Vector2>(value);
+            using var mo = MemoryPool<Vector2>.Shared.Rent(fr.Length*2);
+            var f1 = mo.Memory.Slice(0, fr.Length).Span;
+            var f2 = mo.Memory.Slice(fr.Length, fr.Length).Span;
+            for (int i = 0; i < fr.Length; i++)
+            {
+                f1[i] = new Vector2(fr[i], fi[i]);
+                f2[i] = new Vector2(fr[i], -fi[i]);
+            }
+
+            //current code
+            for (int j = 0; j < value.Length; j += 2)
+            {
+                float q0 = value[j];
+                float q1 = value[j + 1];
+                float fcr = fr[j/2 % fr.Length];
+                float fci = fi[j/2 % fi.Length]; 
+                value[j] = q0 * fcr - q1 * fci;
+                value[j + 1] = q0 * fci + q1 * fcr;
+            }
+        }
+
+
 
         public static void DumpSpan(ReadOnlySpan<float> value)
         {
@@ -177,6 +212,22 @@ namespace LLAMA2Sharp
             }
 
             return probabilities.Length - 1;
+        }
+
+        private static Tensor<T> StackAlongDimension<T>(int dimension,params Tensor<T>[] tensors)
+        {
+
+            if (dimension < 0)
+            {
+                dimension = tensors[0].Rank - dimension;
+            }
+
+            Tensor<T>[] array = new Tensor<T>[tensors.Length];
+            for (int j = 0; j < tensors.Length; j++)
+            {
+                array[j] = tensors[j].Unsqueeze(dimension);
+            }
+            return Tensor.ConcatenateOnDimension<T>(dimension, array);
         }
     }
 }
